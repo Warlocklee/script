@@ -32,7 +32,7 @@ for file in *; do
         while IFS= read -r line
         do
             # 检查行是否已经存在于数组中
-            if [[ ! " ${unique_lines[@]} " =~ " $line " ]]; then
+            if [[ ! " ${unique_lines[@]} " =~ " $line " ]] && [ -n "$line" ]; then
                 # 如果不存在，则将行添加到数组中
                 unique_lines+=("$line")
             fi
