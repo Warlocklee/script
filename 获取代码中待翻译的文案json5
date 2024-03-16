@@ -4,6 +4,10 @@ if [ -z "$1" ]; then
     echo "错误：缺少目录！"
     exit 1
 fi
+if [ ! -d "$1" ]; then
+    echo "$1 不是一个目录"
+    exit 2
+fi
 # 指定目录
 target_dir=$1
 # 获取脚本所在目录的路径
@@ -14,7 +18,7 @@ output_file="$script_dir/en.json5"
 # 判断文件是否存在
 if [ -f "$output_file" ]; then
     echo "文件en.json5已存在,请删除后再次执行"
-    exit 2;
+    exit 3;
 fi
 
 # 切换到目标目录
@@ -23,22 +27,17 @@ cd "$target_dir" || exit
 # 定义一个空数组来存储唯一的行
 unique_lines=()
 
-# 遍历目录下的文件
-for file in *; do
-    # 检查文件是否为普通文件
-    if [ -f "$file" ]; then
-        # 提取t("和")之间的内容
-        extracted_content=$(grep -o '[^a-zA-Z]t("[^"]*")' "$file" | sed 's/[^"]*t("//;s/")//')
-        while IFS= read -r line
-        do
-            # 检查行是否已经存在于数组中
-            if [[ ! " ${unique_lines[@]} " =~ " $line " ]] && [ -n "$line" ]; then
-                # 如果不存在，则将行添加到数组中
-                unique_lines+=("$line")
-            fi
-        done <<< "$extracted_content"
+# 提取t("和")之间的内容
+extracted_content=$(grep -rno '[^a-zA-Z]t("[^"]*")' "$target_dir" | sed 's/[^"]*t("//;s/")//')
+while IFS= read -r line
+do
+    # 检查行是否已经存在于数组中
+    if [[ ! " ${unique_lines[@]} " =~ " $line " ]] && [ -n "$line" ]; then
+        # 如果不存在，则将行添加到数组中
+        unique_lines+=("$line")
     fi
-done
+done <<< "$extracted_content"
+
 
 # 获取数组长度
 declare -i array_length=${#unique_lines[@]}
