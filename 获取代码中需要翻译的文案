@@ -1,0 +1,61 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+    echo "错误：缺少目录！"
+    exit 1
+fi
+# 指定目录
+target_dir=$1
+# 获取脚本所在目录的路径
+script_dir=$(pwd)
+# 输出的json文件名
+output_file="$script_dir/en.json"
+
+# 判断文件是否存在
+if [ -f "$output_file" ]; then
+    echo "文件en.json5已存在,请删除后再次执行"
+    exit 2;
+fi
+
+# 切换到目标目录
+cd "$target_dir" || exit
+
+# 定义一个空数组来存储唯一的行
+unique_lines=()
+
+# 遍历目录下的文件
+for file in *; do
+    # 检查文件是否为普通文件
+    if [ -f "$file" ]; then
+        # 提取t("和")之间的内容
+        extracted_content=$(grep -o '[^a-zA-Z]t("[^"]*")' "$file" | sed 's/[^"]*t("//;s/")//')
+        while IFS= read -r line
+        do
+            # 检查行是否已经存在于数组中
+            if [[ ! " ${unique_lines[@]} " =~ " $line " ]]; then
+                # 如果不存在，则将行添加到数组中
+                unique_lines+=("$line")
+            fi
+        done <<< "$extracted_content"
+    fi
+done
+
+# 获取数组长度
+declare -i array_length=${#unique_lines[@]}
+# 判断数组是否为空
+if [ $array_length -eq 0 ]; then
+    echo "未发现需要翻译的内容"
+else
+    echo "{" >> "$output_file"
+    for ((i=0; i<$array_length; i++)); do
+        element="${unique_lines[$i]}"
+        if [ $i -eq $(($array_length - 1)) ]; then
+            # 如果是最后一个元素，则输出时不加逗号
+            echo "  \"$element\": \"$element\"" >> "$output_file"
+        else
+            # 如果不是最后一个元素，则输出时加逗号
+            echo "  \"$element\": \"$element\"," >> "$output_file"
+        fi
+    done
+    echo "}" >> "$output_file"
+fi
